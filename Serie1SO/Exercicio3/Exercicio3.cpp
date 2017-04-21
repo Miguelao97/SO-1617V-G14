@@ -9,7 +9,7 @@
 
 static char* getProcessName(char* out){
 	char* aux = out;
-	while (*out != '\0' || *(out+1) != '\0'){
+	while (*out != '\0' || *(out + 1) != '\0'){
 		if (*out == '\\'){
 			aux = out;
 			aux++;
@@ -33,15 +33,16 @@ static void printProcessName(char* out){
 
 int _tmain(int argc, _TCHAR* argv[]){
 
-	const DWORD processID = 1732;
+	const DWORD processID = 5876;
 	HANDLE h = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, processID);
 	const DWORD FC = 10;
 
-	PMEMORY_BASIC_INFORMATION buffer = (PMEMORY_BASIC_INFORMATION)malloc(sizeof(PMEMORY_BASIC_INFORMATION));
+	PMEMORY_BASIC_INFORMATION buffer = (PMEMORY_BASIC_INFORMATION)malloc(sizeof(MEMORY_BASIC_INFORMATION));
 
+	LPSYSTEM_INFO systemInfo = (LPSYSTEM_INFO)malloc(sizeof(SYSTEM_INFO));
+	GetSystemInfo(systemInfo);
 
-
-	SIZE_T size = VirtualQueryEx(h, NULL, buffer, sizeof(MEMORY_BASIC_INFORMATION));
+	SIZE_T size = VirtualQueryEx(h, systemInfo->lpMinimumApplicationAddress, buffer, sizeof(MEMORY_BASIC_INFORMATION));
 	DWORD maxReserved = 0;
 	PVOID baseAddress = NULL;
 	PCHAR aux = 0;
@@ -51,17 +52,18 @@ int _tmain(int argc, _TCHAR* argv[]){
 			maxReserved = buffer->RegionSize;
 			baseAddress = buffer->BaseAddress;
 		}
-		aux = (PCHAR)((ULONG*)buffer->BaseAddress + buffer->RegionSize);
-		size = VirtualQueryEx(h, (ULONG*)buffer->BaseAddress + buffer->RegionSize, buffer, sizeof(MEMORY_BASIC_INFORMATION));
+		aux = (PCHAR)((ULONG)buffer->BaseAddress + buffer->RegionSize);
+		size = VirtualQueryEx(h, (PCHAR)((ULONG)(buffer->BaseAddress) + buffer->RegionSize), buffer, sizeof(MEMORY_BASIC_INFORMATION));
 	}
 	char filename[1024] = {};
 	DWORD name = GetModuleFileNameEx(h, 0, (LPTSTR)filename, sizeof(filename)-1);
 
-
 	printProcessName(filename);
-	printf("Max Reserved = %ul", maxReserved);
-	printf("Base Adress = %ul", maxReserved);
+	printf("Max Reserved = %lu\n", maxReserved);
+	printf("Base Adress = %lu\n", baseAddress);
 
+	free(buffer);
+	free(systemInfo);
 	CloseHandle(h);
 	return 0;
 }

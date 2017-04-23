@@ -9,7 +9,6 @@
 
 #include <stdio.h>
 #include <tchar.h>
-
-
-
+#include <Windows.h>
+#include "Exif.h"
 // TODO: reference additional headers your program requires here

@@ -32,10 +32,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Exercicio5.cpp">
+    <ClCompile Include="ExifUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ExifUtils.cpp">
+    <ClCompile Include="Exif.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

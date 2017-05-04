@@ -10,44 +10,48 @@ void PrintError() {
 	return;
 }
 
-PVOID getPointerExif(short marker, HANDLE h) {
+PVOID getPointerExif(short marker, LPVOID h) {
 	for (short* iter = (short*)h; *iter != EOI; iter++)
 	{
-		if (*iter == marker || Align((int*)iter, sizeof(short)) == marker)
+		
+		if (*iter == marker || (short) AlignByte(iter, sizeof(*iter)) == marker)
 			return iter;
 	}
 	return NULL;
 }
 
 int Align(int* pos, size_t nbytes) {
-	return *pos == INTELMACRO ? *pos : AlignByte(pos, nbytes);
+	return  ALIGNMENT==INTELMACRO ? *pos : AlignByte(pos, nbytes);
 }
 
 int AlignByte(PVOID pos, size_t nbytes) {
 	BYTE *bytes = (PBYTE)pos, ret[4] = { 0 };
 	while (nbytes--) ret[nbytes] = *bytes++;
-	int res = *(int*)(bytes);
+	int res = *(int*)(ret);
 	return res;
 }
 
-PEXIF get_exif_from_file(HANDLE h) {
-	PEXIF ret = (PEXIF)getPointerExif(APP1MARKER, h);
+PEXIF get_exif_from_file(LPVOID h) {
+	short test = APP1MARKER;
+	PEXIF ret = (PEXIF)getPointerExif(test, h);
 	//alignment (to know if its intel or motorola)
 	ALIGNMENT = ret->tiffhead.byte_align;
 	return ret;
 }
 
 PVOID getAdress(PBYTE base, int offset) {
-	return (PVOID)(base + offset);
+	return (PVOID)(base + Align(&offset,sizeof(offset)));
 }
 
 
 
 static ENTRY getEntry(short tag, PIFD pifd) {
-	int noEntries = Align((int*)(&pifd->num_dir), sizeof(pifd->num_dir));
+	short noEntries = Align((int*)(&pifd->num_dir), sizeof(pifd->num_dir));
 	PENTRY entry = pifd->entry;
 	for (short i = 0, value; i < noEntries; i++) {
-		if (Align((int*)(&entry[i].tag), sizeof(entry[i].tag)) == tag) {
+		short test = Align((int*)(&entry[i].tag), sizeof(entry[i].tag));
+		
+		if ( test == tag) {
 			return entry[i];
 		}
 	}
@@ -112,7 +116,7 @@ void printTagsW(LPCWSTR nameFile) {
 	}
 
 
-	HANDLE viewExif = MapViewOfFile(mapFile, FILE_MAP_READ, 0, 0, NULL);
+	LPVOID viewExif = MapViewOfFile(mapFile, FILE_MAP_READ, 0, 0, NULL);
 
 	if (viewExif == INVALID_HANDLE_VALUE) {
 		PrintError();
@@ -137,10 +141,11 @@ void printTagsW(LPCWSTR nameFile) {
 		length = getEntryAleign(LTH, subIFD0);
 
 	PIFD gpsInfo = (PIFD)getAdress(btif, gpsOff.data_value);
-	ENTRY latitude = getEntryAleign(LAT, subIFD0),
-		longitude_reference = getEntryAleign(LNGREF, subIFD0),
-		longitude = getEntryAleign(LNG, subIFD0),
-		altitude = getEntryAleign(ALT, subIFD0);
+	ENTRY latitude = getEntryAleign(LAT, gpsInfo),
+		longitude_reference = getEntryAleign(LNGREF, gpsInfo),
+		longitude = getEntryAleign(LNG, gpsInfo),
+		latitude_reference = getEntryAleign(LATREF,gpsInfo),
+		altitude = getEntryAleign(ALT, gpsInfo);
 
 	long lat[6], lon[6], alt[6], ext[6], apv[6];
 	getAlignedRational((PLONG)getAdress(btif, latitude.data_value), lat, latitude.num_comp);
@@ -149,15 +154,15 @@ void printTagsW(LPCWSTR nameFile) {
 	getAlignedRational((PLONG)getAdress(btif, exposureTime.data_value), ext, exposureTime.num_comp);
 	getAlignedRational((PLONG)getAdress(btif, apertureTime.data_value), apv, apertureTime.num_comp);
 
-	if (&model != NULL)printf("Model: %s\n", (PCHAR)getAdress(btif, model.data_value));
-	if (&width != NULL && &length != NULL)printf("Dimensão : %u px x %u px\n", width.data_value, length.data_value);
-	if (&dateTime != NULL)printf("Data: %s\n", (PCHAR)getAdress(btif, dateTime.data_value));
-	if (&iso != NULL) printf("ISO : %u\n", iso.data_value);
-	if (&exposureTime != NULL)printf("Velocidade : %lu / %lu s\n", ext[0], ext[1]);
-	if (&apertureTime != NULL)printf("Abertura : %f\n", (FLOAT)apv[0] / apv[1]);
-	if (&latitude != NULL)printf("Latitude : %lu; %lu; %f %s\n", lat[0] / lat[1], lat[2] / lat[3], (FLOAT)lat[4] / lat[5], (PCHAR)&latitude.data_value);
-	if (&longitude != NULL && &longitude_reference != NULL)printf("Longitude : %lu; %lu; %f %s\n", lon[0] / lon[1], lon[2] / lon[3], (FLOAT)lon[4] / lon[5], (PCHAR)&longitude_reference.data_value);
-	if (&altitude != NULL)printf("Altitude : %f\n", (FLOAT)alt[0] / alt[1]);
+	if (model.tag != NULL)printf("Model: %s\n", (PCHAR)getAdress(btif, model.data_value));
+	if (width.tag != NULL && &length != NULL)printf("Dimensão : %u px x %u px\n", width.data_value, length.data_value);
+	if (dateTime.tag != NULL)printf("Data: %s\n", (PCHAR)getAdress(btif, dateTime.data_value));
+	if (iso.tag != NULL) printf("ISO : %u\n", iso.data_value);
+	if (exposureTime.tag != NULL)printf("Velocidade : %lu / %lu s\n", ext[0], ext[1]);
+	if (apertureTime.tag != NULL)printf("Abertura : %f\n", (FLOAT)apv[0] / apv[1]);
+	if (latitude.tag != NULL)printf("Latitude : %lu; %lu; %f %s\n", lat[0] / lat[1], lat[2] / lat[3], (FLOAT)lat[4] / lat[5], (PCHAR)&latitude_reference.data_value);
+	if (longitude.tag != NULL && &longitude_reference != NULL)printf("Longitude : %lu; %lu; %f %s\n", lon[0] / lon[1], lon[2] / lon[3], (FLOAT)lon[4] / lon[5], (PCHAR)&longitude_reference.data_value);
+	if (altitude.tag != NULL)printf("Altitude : %f\n", (FLOAT)alt[0] / alt[1]);
 
 
 	UnmapViewOfFile(viewExif);

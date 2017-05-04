@@ -33,6 +33,7 @@
 	#define LAT (0x0002)
 	#define LNG (0x0004)
 	#define LNGREF (0x0003)
+	#define LATREF (0x0001)
 	#define ALT (0x0006)
 
 	typedef struct entry {

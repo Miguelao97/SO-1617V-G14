@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Express 2013 for Windows Desktop
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JPG_SearchProgram", "JPG_SearchProgram\JPG_SearchProgram.vcxproj", "{EE8B1893-3690-4C38-8045-38E4D45EB67E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JPG_SearchService", "JPG_SearchService\JPG_SearchService.vcxproj", "{911C6F72-1F63-40B3-88F0-2D450250DA7C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JPG_SearchServiceServer", "JPG_SearchServiceServer\JPG_SearchServiceServer.vcxproj", "{86DD90CC-E66F-4E69-B962-CF48631C3A73}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JPG_SearchServiceClient", "JPG_SearchServiceClient\JPG_SearchServiceClient.vcxproj", "{054697DF-1382-4DCC-8315-50874AD62997}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EE8B1893-3690-4C38-8045-38E4D45EB67E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EE8B1893-3690-4C38-8045-38E4D45EB67E}.Debug|Win32.Build.0 = Debug|Win32
+		{EE8B1893-3690-4C38-8045-38E4D45EB67E}.Release|Win32.ActiveCfg = Release|Win32
+		{EE8B1893-3690-4C38-8045-38E4D45EB67E}.Release|Win32.Build.0 = Release|Win32
+		{911C6F72-1F63-40B3-88F0-2D450250DA7C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{911C6F72-1F63-40B3-88F0-2D450250DA7C}.Debug|Win32.Build.0 = Debug|Win32
+		{911C6F72-1F63-40B3-88F0-2D450250DA7C}.Release|Win32.ActiveCfg = Release|Win32
+		{911C6F72-1F63-40B3-88F0-2D450250DA7C}.Release|Win32.Build.0 = Release|Win32
+		{86DD90CC-E66F-4E69-B962-CF48631C3A73}.Debug|Win32.ActiveCfg = Debug|Win32
+		{86DD90CC-E66F-4E69-B962-CF48631C3A73}.Debug|Win32.Build.0 = Debug|Win32
+		{86DD90CC-E66F-4E69-B962-CF48631C3A73}.Release|Win32.ActiveCfg = Release|Win32
+		{86DD90CC-E66F-4E69-B962-CF48631C3A73}.Release|Win32.Build.0 = Release|Win32
+		{054697DF-1382-4DCC-8315-50874AD62997}.Debug|Win32.ActiveCfg = Debug|Win32
+		{054697DF-1382-4DCC-8315-50874AD62997}.Debug|Win32.Build.0 = Debug|Win32
+		{054697DF-1382-4DCC-8315-50874AD62997}.Release|Win32.ActiveCfg = Release|Win32
+		{054697DF-1382-4DCC-8315-50874AD62997}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

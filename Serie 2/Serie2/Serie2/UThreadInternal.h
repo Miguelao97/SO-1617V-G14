@@ -58,9 +58,18 @@ typedef enum { Running, Ready, Blocked } UtState;
 // argument, the memory block used as the thread's stack and a pointer to the
 // saved execution context.
 //
+
+typedef struct _WAIT_BLOCK {
+	LIST_ENTRY		 Link;
+	PUTHREAD		 Thread;
+}WAIT_BLOCK, *PWAIT_BLOCK;
+
 typedef struct _UTHREAD {
 	PUTHREAD_CONTEXT ThreadContext;
 	LIST_ENTRY       Link;
+	LIST_ENTRY       AliveLink;
+	WAIT_BLOCK		 JoinList;
+	INT				 JoinCnt;
 	UT_FUNCTION      Function;   
 	UT_ARGUMENT      Argument; 
 	PUCHAR           Stack;

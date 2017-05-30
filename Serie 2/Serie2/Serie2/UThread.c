@@ -32,6 +32,9 @@ ULONG NumberOfThreads;
 static
 LIST_ENTRY ReadyQueue;
 
+static
+LIST_ENTRY AliveQueue;
+
 //
 // The currently executing thread.
 //
@@ -116,6 +119,7 @@ VOID Schedule () {
 	PUTHREAD NextThread;
     NextThread = ExtractNextReadyThread();
 	ContextSwitch(RunningThread, NextThread);
+	NextThread->State = Running;
 }
 
 ///////////////////////////////
@@ -129,6 +133,7 @@ VOID Schedule () {
 //
 VOID UtInit() {
 	InitializeListHead(&ReadyQueue);
+	InitializeListHead(&AliveQueue);
 }
 
 //
@@ -187,6 +192,16 @@ VOID UtRun () {
 //
 VOID UtExit () {
 	NumberOfThreads -= 1;	
+	RemoveEntryList(&(RunningThread->AliveLink));
+	PWAIT_BLOCK head = & RunningThread->JoinList;
+	PWAIT_BLOCK iter = head;
+	do{
+		iter = head->Link->Flink
+		RemoveEntry(wb->Link);
+		wb->Thread->JoinCnt--;
+		
+	} while (iter !=head);
+
 	InternalExit(RunningThread, ExtractNextReadyThread());
 	_ASSERTE(!"Supposed to be here!");
 }
@@ -198,6 +213,7 @@ VOID UtExit () {
 VOID UtYield () {
 	if (!IsListEmpty(&ReadyQueue)) {
 		InsertTailList(&ReadyQueue, &RunningThread->Link);
+		RunningThread->State = Ready;
 		Schedule();
 	}
 }
@@ -213,7 +229,9 @@ HANDLE UtSelf () {
 // Halts the execution of the current user thread.
 //
 VOID UtDeactivate() {
+	RunningThread->State = Blocked;
 	Schedule();
+	
 }
 
 
@@ -223,6 +241,7 @@ VOID UtDeactivate() {
 //
 VOID UtActivate (HANDLE ThreadHandle) {
 	InsertTailList(&ReadyQueue, &((PUTHREAD)ThreadHandle)->Link);
+	((PUTHREAD)ThreadHandle)->State = Ready;
 }
 
 ///////////////////////////////////////
@@ -319,7 +338,7 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	//
 	NumberOfThreads += 1;
 	UtActivate((HANDLE)Thread);
-	
+	InsertTailList(&AliveQueue,&(Thread->AliveLink));
 	return (HANDLE)Thread;
 }
 
@@ -523,6 +542,37 @@ VOID CleanupThread (PUTHREAD Thread) {
 // Exercicio 1a
 //
 
-int UtThreadState(HANDLE thread) {
+INT UtThreadState(HANDLE thread) {
+
 	return ((PUTHREAD)thread)->State;
+}
+
+BOOL UtAlive(HANDLE thread) {
+	PLIST_ENTRY entry = &((PUTHREAD)thread)->AliveLink;
+	return entry->Blink->Flink == entry;
+}
+
+void UtSwitchTo(HANDLE threadToRun) {
+	if (UtAlive(threadToRun) && ((PUTHREAD)threadToRun)->State == Ready) {
+		RunningThread->State = Ready;
+		((PUTHREAD)threadToRun)->State = Running;
+		ContextSwitch(RunningThread, (PUTHREAD)threadToRun);
+	}		
+}
+
+BOOL UtMultJoin(HANDLE handle[], int size) {
+	for (int i = 0; i < size; i++)
+		if (!UtAlive(handle[i]) && (PUTHREAD)handle[i] == RunningThread)
+			return FALSE;
+
+	PWAIT_BLOCK arr = (PWAIT_BLOCK)malloc(sizeof(WAIT_BLOCK)*size);
+
+	for (int i = 0; i < size; i++) {
+		LIST_ENTRY entry;
+		InitializeListHead(&entry);
+		arr[i].Link = entry;
+		arr[i].Thread = RunningThread;
+		InsertTailList(&((PUTHREAD)handle[i])->JoinList.Link,&(arr[i].Link));
+		((PUTHREAD)handle[i])->JoinCnt++;
+	}
 }

@@ -24,7 +24,7 @@
 
 // Initializes the specified doubly linked list.
 //
-FORCEINLINE VOID InitializeListHead (PLIST_ENTRY ListHead) {
+FORCEINLINE VOID InitializeListHead  (PLIST_ENTRY ListHead) {
 	ListHead->Flink = ListHead->Blink = ListHead;
 }
 

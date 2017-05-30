@@ -118,7 +118,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\List.h" />
+    <ClInclude Include="List.h" />
     <ClInclude Include="Testes.h" />
     <ClInclude Include="UThread.h" />
     <ClInclude Include="UThreadInternal.h" />

@@ -193,14 +193,15 @@ VOID UtRun () {
 VOID UtExit () {
 	NumberOfThreads -= 1;	
 	RemoveEntryList(&(RunningThread->AliveLink));
-	PWAIT_BLOCK head = & RunningThread->JoinList;
-	PWAIT_BLOCK iter = head;
-	do{
-		iter = head->Link->Flink
-		RemoveEntry(wb->Link);
+	//Novo codigo
+	PWAIT_BLOCK dummy = RunningThread->JoinList;
+
+
+	while (& dummy->Link.Flink != & dummy->Link) {
 		wb->Thread->JoinCnt--;
-		
-	} while (iter !=head);
+		free(wb);
+		 wb = CONTAINING_RECORD(RemoveHeadList(&RunningThread->JoinList), WAIT_BLOCK, Link);
+	}
 
 	InternalExit(RunningThread, ExtractNextReadyThread());
 	_ASSERTE(!"Supposed to be here!");
@@ -337,8 +338,10 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	// Ready the thread.
 	//
 	NumberOfThreads += 1;
-	UtActivate((HANDLE)Thread);
-	InsertTailList(&AliveQueue,&(Thread->AliveLink));
+	UtActivate((HANDLE)Thread);							//Insere na ReadyQueue
+	InsertTailList(&AliveQueue,&(Thread->AliveLink));	//Insere na ALiveQueue
+	Thread->JoinCnt = 0;								// Como acabou de ser criada nao tem Threads à sua espera
+	InitializeListHead(&Thread->JoinList);				//Inicia a Join List "vazia"
 	return (HANDLE)Thread;
 }
 
@@ -397,7 +400,8 @@ VOID __fastcall CleanupThread (PUTHREAD Thread) {
 // __declspec(naked) directs the compiler to omit any prologue or epilogue.
 //
 __declspec(naked)
-VOID __fastcall InternalExit (PUTHREAD CurrentThread, PUTHREAD NextThread) {
+VOID __fastcall 
+(PUTHREAD CurrentThread, PUTHREAD NextThread) {
 	__asm {
 
 		//
@@ -566,13 +570,14 @@ BOOL UtMultJoin(HANDLE handle[], int size) {
 			return FALSE;
 
 	PWAIT_BLOCK arr = (PWAIT_BLOCK)malloc(sizeof(WAIT_BLOCK)*size);
-
+	RunningThread->State = Blocked;
 	for (int i = 0; i < size; i++) {
 		LIST_ENTRY entry;
 		InitializeListHead(&entry);
 		arr[i].Link = entry;
 		arr[i].Thread = RunningThread;
-		InsertTailList(&((PUTHREAD)handle[i])->JoinList.Link,&(arr[i].Link));
+		InsertTailList(&((PUTHREAD)handle[i])->JoinList.Link,	&(arr[i].Link));
 		((PUTHREAD)handle[i])->JoinCnt++;
 	}
+	return TRUE;
 }

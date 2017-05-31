@@ -59,16 +59,13 @@ typedef enum { Running, Ready, Blocked } UtState;
 // saved execution context.
 //
 
-typedef struct _WAIT_BLOCK {
-	LIST_ENTRY		 Link;
-	PUTHREAD		 Thread;
-}WAIT_BLOCK, *PWAIT_BLOCK;
+
 
 typedef struct _UTHREAD {
 	PUTHREAD_CONTEXT ThreadContext;
 	LIST_ENTRY       Link;
 	LIST_ENTRY       AliveLink;
-	WAIT_BLOCK		 JoinList;
+	//WAIT_BLOCK		 JoinList;
 	INT				 JoinCnt;
 	UT_FUNCTION      Function;   
 	UT_ARGUMENT      Argument; 

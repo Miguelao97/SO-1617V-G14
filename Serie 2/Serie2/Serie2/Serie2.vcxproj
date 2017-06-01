@@ -74,6 +74,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -119,12 +120,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="List.h" />
-    <ClInclude Include="Testes.h" />
     <ClInclude Include="UThread.h" />
     <ClInclude Include="UThreadInternal.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Testes.cpp" />
+    <ClCompile Include="Main.c" />
     <ClCompile Include="UThread.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

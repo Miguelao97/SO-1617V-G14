@@ -35,7 +35,7 @@ typedef struct _UTHREAD_CONTEXT {
 	ULONGLONG RDI;
 	ULONGLONG RBX;
 	ULONGLONG RBP;
-	VOID (*RetAddr)();
+	VOID(*RetAddr)();
 } UTHREAD_CONTEXT, *PUTHREAD_CONTEXT;
 #else
 typedef struct _UTHREAD_CONTEXT {
@@ -43,15 +43,19 @@ typedef struct _UTHREAD_CONTEXT {
 	ULONG ESI;
 	ULONG EBX;
 	ULONG EBP;
-	VOID (*RetAddr)();
+	VOID(*RetAddr)();
 } UTHREAD_CONTEXT, *PUTHREAD_CONTEXT;
 #endif
 
-//
-//The enumerator that describes the state of the threads
-//
-
 typedef enum { Running, Ready, Blocked } UtState;
+
+typedef struct _UTHREAD *PUTHREAD;
+
+typedef struct _WAIT_BLOCK {
+	LIST_ENTRY		 Link;
+	PUTHREAD		 Thread;
+} WAIT_BLOCK, *PWAIT_BLOCK;
+
 //
 // The descriptor of a user thread, containing an intrusive link (through which
 // the thread is linked in the ready queue), the thread's starting function and
@@ -59,21 +63,21 @@ typedef enum { Running, Ready, Blocked } UtState;
 // saved execution context.
 //
 
-
-
 typedef struct _UTHREAD {
 	PUTHREAD_CONTEXT ThreadContext;
 	LIST_ENTRY       Link;
-	LIST_ENTRY       AliveLink;
-	//WAIT_BLOCK		 JoinList;
-	INT				 JoinCnt;
-	UT_FUNCTION      Function;   
-	UT_ARGUMENT      Argument; 
+	UT_FUNCTION      Function;
+	UT_ARGUMENT      Argument;
 	PUCHAR           Stack;
 	UtState			 State;
-} UTHREAD, *PUTHREAD;
+	LIST_ENTRY		 AliveLink;
+	WAIT_BLOCK		 JoinList;
+	INT				 JoinCount;
+} UTHREAD;
 
 //
 // The fixed stack size of a user thread.
 //
 #define STACK_SIZE (16 * 4096)
+
+

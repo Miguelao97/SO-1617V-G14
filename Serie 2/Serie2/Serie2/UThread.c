@@ -63,7 +63,7 @@ PUTHREAD MainThread;
 // which the associated function is called.
 //
 static
-VOID InternalStart ();
+VOID InternalStart();
 
 
 #ifdef UTHREAD_X64
@@ -71,18 +71,18 @@ VOID InternalStart ();
 // Performs a context switch from CurrentThread to NextThread.
 // In x64 calling convention CurrentThread is in RCX and NextThread in RDX.
 //
-VOID __fastcall  ContextSwitch (PUTHREAD CurrentThread, PUTHREAD NextThread);
+VOID __fastcall  ContextSwitch(PUTHREAD CurrentThread, PUTHREAD NextThread);
 
 //
 // Frees the resources associated with CurrentThread and switches to NextThread.
 // In x64 calling convention  CurrentThread is in RCX and NextThread in RDX.
 //
-VOID __fastcall InternalExit (PUTHREAD Thread, PUTHREAD NextThread);
+VOID __fastcall InternalExit(PUTHREAD Thread, PUTHREAD NextThread);
 
 #else
 
 static
-VOID __fastcall ContextSwitch (PUTHREAD CurrentThread, PUTHREAD NextThread);
+VOID __fastcall ContextSwitch(PUTHREAD CurrentThread, PUTHREAD NextThread);
 
 //
 // Frees the resources associated with CurrentThread and switches to NextThread.
@@ -90,7 +90,7 @@ VOID __fastcall ContextSwitch (PUTHREAD CurrentThread, PUTHREAD NextThread);
 // and NextThread in EDX.
 //
 static
-VOID __fastcall InternalExit (PUTHREAD Thread, PUTHREAD NextThread);
+VOID __fastcall InternalExit(PUTHREAD Thread, PUTHREAD NextThread);
 #endif
 
 ////////////////////////////////////////
@@ -98,16 +98,17 @@ VOID __fastcall InternalExit (PUTHREAD Thread, PUTHREAD NextThread);
 // UThread inline internal operations.
 //
 
+
 //
 // Returns and removes the first user thread in the ready queue. If the ready
 // queue is empty, the main thread is returned.
 //
 static
 FORCEINLINE
-PUTHREAD ExtractNextReadyThread () {
-	return IsListEmpty(&ReadyQueue) 
-		 ? MainThread 
-		 : CONTAINING_RECORD(RemoveHeadList(&ReadyQueue), UTHREAD, Link);
+PUTHREAD ExtractNextReadyThread() {
+	return IsListEmpty(&ReadyQueue)
+		? MainThread
+		: CONTAINING_RECORD(RemoveHeadList(&ReadyQueue), UTHREAD, Link);
 }
 
 //
@@ -115,9 +116,9 @@ PUTHREAD ExtractNextReadyThread () {
 //
 static
 FORCEINLINE
-VOID Schedule () {
+VOID Schedule() {
 	PUTHREAD NextThread;
-    NextThread = ExtractNextReadyThread();
+	NextThread = ExtractNextReadyThread();
 	ContextSwitch(RunningThread, NextThread);
 	NextThread->State = Running;
 }
@@ -148,7 +149,7 @@ VOID UtEnd() {
 // performs a context switch to a user thread and resumes execution only when
 // all user threads have exited.
 //
-VOID UtRun () {
+VOID UtRun() {
 	UTHREAD Thread; // Represents the underlying operating system thread.
 
 	//
@@ -169,7 +170,7 @@ VOID UtRun () {
 	MainThread = &Thread;
 	RunningThread = MainThread;
 	Schedule();
- 
+
 	//
 	// When we get here, there are no more runnable user threads.
 	//
@@ -190,17 +191,20 @@ VOID UtRun () {
 // Terminates the execution of the currently running thread. All associated
 // resources are released after the context switch to the next ready thread.
 //
-VOID UtExit () {
-	NumberOfThreads -= 1;	
-	RemoveEntryList(&(RunningThread->AliveLink));
+VOID UtExit() {
+	NumberOfThreads -= 1;
+	RemoveEntryList(&RunningThread->AliveLink);
 	//Novo codigo
-	PWAIT_BLOCK dummy = RunningThread->JoinList;
+
+	PWAIT_BLOCK head = &RunningThread->JoinList;
 
 
-	while (& dummy->Link.Flink != & dummy->Link) {
-		wb->Thread->JoinCnt--;
-		free(wb);
-		 wb = CONTAINING_RECORD(RemoveHeadList(&RunningThread->JoinList), WAIT_BLOCK, Link);
+	while (head->Link.Flink != &head->Link) {
+		PWAIT_BLOCK wb = CONTAINING_RECORD(RemoveHeadList(&RunningThread->JoinList.Link), WAIT_BLOCK, Link);
+
+		if (wb->Thread->JoinCount-- == 0)
+			UtActivate(wb->Thread);
+
 	}
 
 	InternalExit(RunningThread, ExtractNextReadyThread());
@@ -211,7 +215,7 @@ VOID UtExit () {
 // Relinquishes the processor to the first user thread in the ready queue.
 // If there are no ready threads, the function returns immediately.
 //
-VOID UtYield () {
+VOID UtYield() {
 	if (!IsListEmpty(&ReadyQueue)) {
 		InsertTailList(&ReadyQueue, &RunningThread->Link);
 		RunningThread->State = Ready;
@@ -219,10 +223,11 @@ VOID UtYield () {
 	}
 }
 
+
 //
 // Returns a HANDLE to the executing user thread.
 //
-HANDLE UtSelf () {
+HANDLE UtSelf() {
 	return (HANDLE)RunningThread;
 }
 
@@ -232,7 +237,7 @@ HANDLE UtSelf () {
 VOID UtDeactivate() {
 	RunningThread->State = Blocked;
 	Schedule();
-	
+
 }
 
 
@@ -240,7 +245,7 @@ VOID UtDeactivate() {
 // Places the specified user thread at the end of the ready queue, where it
 // becomes eligible to run.
 //
-VOID UtActivate (HANDLE ThreadHandle) {
+VOID UtActivate(HANDLE ThreadHandle) {
 	InsertTailList(&ReadyQueue, &((PUTHREAD)ThreadHandle)->Link);
 	((PUTHREAD)ThreadHandle)->State = Ready;
 }
@@ -254,9 +259,9 @@ VOID UtActivate (HANDLE ThreadHandle) {
 // The trampoline function that a user thread begins by executing, through
 // which the associated function is called.
 //
-VOID InternalStart () {
+VOID InternalStart() {
 	RunningThread->Function(RunningThread->Argument);
-	UtExit(); 
+	UtExit();
 }
 
 //
@@ -268,14 +273,14 @@ VOID InternalStart () {
 // Creates a user thread to run the specified function. The thread is placed
 // at the end of the ready queue.
 //
-HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
+HANDLE UtCreate(UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	PUTHREAD Thread;
-	
+
 	//
 	// Dynamically allocate an instance of UTHREAD and the associated stack.
 	//
-	Thread = (PUTHREAD) malloc(sizeof (UTHREAD));
-	Thread->Stack = (PUCHAR) malloc(STACK_SIZE);
+	Thread = (PUTHREAD)malloc(sizeof(UTHREAD));
+	Thread->Stack = (PUCHAR)malloc(STACK_SIZE);
 	_ASSERTE(Thread != NULL && Thread->Stack != NULL);
 
 	//
@@ -316,8 +321,8 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	// +------------+       (Thread->Stack always points to this location).
 	//
 
-	Thread->ThreadContext = (PUTHREAD_CONTEXT) (Thread->Stack +
-		STACK_SIZE - sizeof (ULONG) - sizeof (UTHREAD_CONTEXT)) -8;
+	Thread->ThreadContext = (PUTHREAD_CONTEXT)(Thread->Stack +
+		STACK_SIZE - sizeof(ULONG) - sizeof(UTHREAD_CONTEXT)) - 8;
 
 	//
 	// Set the thread's initial context by initializing the values of EDI,
@@ -331,7 +336,7 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	Thread->ThreadContext->EDI = 0x33333333;
 	Thread->ThreadContext->EBX = 0x11111111;
 	Thread->ThreadContext->ESI = 0x22222222;
-	Thread->ThreadContext->EBP = 0x00000000;									  
+	Thread->ThreadContext->EBP = 0x00000000;
 	Thread->ThreadContext->RetAddr = InternalStart;
 
 	//
@@ -339,8 +344,8 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	//
 	NumberOfThreads += 1;
 	UtActivate((HANDLE)Thread);							//Insere na ReadyQueue
-	InsertTailList(&AliveQueue,&(Thread->AliveLink));	//Insere na ALiveQueue
-	Thread->JoinCnt = 0;								// Como acabou de ser criada nao tem Threads à sua espera
+	InsertTailList(&AliveQueue, &(Thread->AliveLink));	//Insere na ALiveQueue
+	Thread->JoinCount = 0;								// Como acabou de ser criada nao tem Threads à sua espera
 	InitializeListHead(&Thread->JoinList);				//Inicia a Join List "vazia"
 	return (HANDLE)Thread;
 }
@@ -350,8 +355,8 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 // __fastcall sets the calling convention such that CurrentThread is in ECX and NextThread in EDX.
 // __declspec(naked) directs the compiler to omit any prologue or epilogue.
 //
-__declspec(naked) 
-VOID __fastcall ContextSwitch (PUTHREAD CurrentThread, PUTHREAD NextThread) {
+__declspec(naked)
+VOID __fastcall ContextSwitch(PUTHREAD CurrentThread, PUTHREAD NextThread) {
 	__asm {
 		// Switch out the running CurrentThread, saving the execution context on the thread's own stack.   
 		// The return address is atop the stack, having been placed there by the call to this function.
@@ -363,7 +368,7 @@ VOID __fastcall ContextSwitch (PUTHREAD CurrentThread, PUTHREAD NextThread) {
 		//
 		// Save ESP in CurrentThread->ThreadContext.
 		//
-		mov		dword ptr [ecx].ThreadContext, esp
+		mov		dword ptr[ecx].ThreadContext, esp
 		//
 		// Set NextThread as the running thread.
 		//
@@ -371,7 +376,7 @@ VOID __fastcall ContextSwitch (PUTHREAD CurrentThread, PUTHREAD NextThread) {
 		//
 		// Load NextThread's context, starting by switching to its stack, where the registers are saved.
 		//
-		mov		esp, dword ptr [edx].ThreadContext
+		mov		esp, dword ptr[edx].ThreadContext
 		pop		edi
 		pop		esi
 		pop		ebx
@@ -389,7 +394,7 @@ VOID __fastcall ContextSwitch (PUTHREAD CurrentThread, PUTHREAD NextThread) {
 //
 
 static
-VOID __fastcall CleanupThread (PUTHREAD Thread) {
+VOID __fastcall CleanupThread(PUTHREAD Thread) {
 	free(Thread->Stack);
 	free(Thread);
 }
@@ -400,20 +405,20 @@ VOID __fastcall CleanupThread (PUTHREAD Thread) {
 // __declspec(naked) directs the compiler to omit any prologue or epilogue.
 //
 __declspec(naked)
-VOID __fastcall 
-(PUTHREAD CurrentThread, PUTHREAD NextThread) {
+VOID __fastcall
+InternalExit(PUTHREAD CurrentThread, PUTHREAD NextThread) {
 	__asm {
 
 		//
 		// Set NextThread as the running thread.
 		//
 		mov     RunningThread, edx
-		
+
 		//
 		// Load NextThread's stack pointer before calling CleanupThread(): making the call while
 		// using CurrentThread's stack would mean using the same memory being freed -- the stack.
 		//
-		mov		esp, dword ptr [edx].ThreadContext
+		mov		esp, dword ptr[edx].ThreadContext
 
 		call    CleanupThread
 
@@ -434,14 +439,14 @@ VOID __fastcall
 // Creates a user thread to run the specified function. The thread is placed
 // at the end of the ready queue.
 //
-HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
+HANDLE UtCreate(UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	PUTHREAD Thread;
-	
+
 	//
 	// Dynamically allocate an instance of UTHREAD and the associated stack.
 	//
-	Thread = (PUTHREAD) malloc(sizeof (UTHREAD));
-	Thread->Stack = (PUCHAR) malloc(STACK_SIZE);
+	Thread = (PUTHREAD)malloc(sizeof(UTHREAD));
+	Thread->Stack = (PUCHAR)malloc(STACK_SIZE);
 	_ASSERTE(Thread != NULL && Thread->Stack != NULL);
 
 	//
@@ -498,13 +503,13 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	// +------------+       (Thread->Stack always points to this location).
 	//
 
-	Thread->ThreadContext = (PUTHREAD_CONTEXT) (Thread->Stack +
-		STACK_SIZE -sizeof (UTHREAD_CONTEXT)-sizeof(ULONGLONG)*5);
+	Thread->ThreadContext = (PUTHREAD_CONTEXT)(Thread->Stack +
+		STACK_SIZE - sizeof(UTHREAD_CONTEXT) - sizeof(ULONGLONG) * 5);
 
 	//
 	// Set the thread's initial context by initializing the values of 
 	// registers that must be saved by the called (R15,R14,R13,R12, RSI, RDI, RBCX, RBP)
-	
+
 	// 
 	// Upon the first context switch to this thread, after popping the dummy
 	// values of the "saved" registers, a ret instruction will place the
@@ -513,11 +518,11 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	Thread->ThreadContext->R15 = 0x77777777;
 	Thread->ThreadContext->R14 = 0x66666666;
 	Thread->ThreadContext->R13 = 0x55555555;
-	Thread->ThreadContext->R12 = 0x44444444;	
+	Thread->ThreadContext->R12 = 0x44444444;
 	Thread->ThreadContext->RSI = 0x33333333;
 	Thread->ThreadContext->RDI = 0x11111111;
 	Thread->ThreadContext->RBX = 0x22222222;
-	Thread->ThreadContext->RBP = 0x11111111;		
+	Thread->ThreadContext->RBP = 0x11111111;
 	Thread->ThreadContext->RetAddr = InternalStart;
 
 	//
@@ -525,7 +530,7 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 	//
 	NumberOfThreads += 1;
 	UtActivate((HANDLE)Thread);
-	
+
 	return (HANDLE)Thread;
 }
 
@@ -534,7 +539,7 @@ HANDLE UtCreate (UT_FUNCTION Function, UT_ARGUMENT Argument) {
 // Frees the resources associated with Thread.
 // In X64 calling convention Thread comes in RCX.
 //
-VOID CleanupThread (PUTHREAD Thread) {
+VOID CleanupThread(PUTHREAD Thread) {
 	free(Thread->Stack);
 	free(Thread);
 }
@@ -561,7 +566,7 @@ void UtSwitchTo(HANDLE threadToRun) {
 		RunningThread->State = Ready;
 		((PUTHREAD)threadToRun)->State = Running;
 		ContextSwitch(RunningThread, (PUTHREAD)threadToRun);
-	}		
+	}
 }
 
 BOOL UtMultJoin(HANDLE handle[], int size) {
@@ -569,15 +574,22 @@ BOOL UtMultJoin(HANDLE handle[], int size) {
 		if (!UtAlive(handle[i]) && (PUTHREAD)handle[i] == RunningThread)
 			return FALSE;
 
-	PWAIT_BLOCK arr = (PWAIT_BLOCK)malloc(sizeof(WAIT_BLOCK)*size);
-	RunningThread->State = Blocked;
+	//	PWAIT_BLOCK arr = (PWAIT_BLOCK)malloc(sizeof(WAIT_BLOCK)*size);
+
 	for (int i = 0; i < size; i++) {
+		WAIT_BLOCK wb;
 		LIST_ENTRY entry;
+
 		InitializeListHead(&entry);
-		arr[i].Link = entry;
-		arr[i].Thread = RunningThread;
-		InsertTailList(&((PUTHREAD)handle[i])->JoinList.Link,	&(arr[i].Link));
-		((PUTHREAD)handle[i])->JoinCnt++;
+		wb.Link = entry;
+		wb.Thread = RunningThread;
+		InsertTailList(&((PUTHREAD)handle[i])->JoinList.Link, &(wb.Link));
+		((PUTHREAD)handle[i])->JoinCount++;
 	}
+
+	RunningThread->State = Blocked;
+	UtDeactivate();
+
 	return TRUE;
 }
+

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-DWORD main(DWORD argc, PCTSTR argv[])
+DWORD _tmain(DWORD argc, PCTSTR argv[])
 {
 	
 	//TCHAR* test = TEXT("ISEL.jpg");

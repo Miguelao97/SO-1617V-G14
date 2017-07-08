@@ -43,6 +43,20 @@ int ConnectionGetLine(PCONNECTION cn, char *buffer, int bufferSize) {
 	return i;
 }
 
+int ConnectionGetLineAsync(PCONNECTION cn, char *buffer, int bufferSize) {
+	int i = 0;
+	int c;
+
+	while (i < bufferSize - 1 && (c = cn->bufferIn[cn->rPos++]) != -1 && c != '\r')
+		buffer[i++] = c;
+	if (c == -1)
+		return -1;
+	if (c == '\r')
+		cn->rPos++; /* read line feed */
+	buffer[i] = 0;
+	return i;
+}
+
 
 /*
 * Output formatters

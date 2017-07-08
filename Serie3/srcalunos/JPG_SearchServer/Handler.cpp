@@ -108,7 +108,7 @@ static BOOL ProcessQueryCmd(PCONNECTION cn) {
 	char line[MAXSIZE];
 	int lineSize;
 
-	if ((lineSize = ConnectionGetLine(cn, line, MAXSIZE)) > 0) {
+	if ((lineSize = ConnectionGetLineAsync(cn, line, MAXSIZE)) > 0) {
 		POP_CTX ctx = CreateJPGContext();
 		char *parms[4] = { 0 };
 		int tag;
@@ -248,7 +248,7 @@ BOOL ProcessRequest(PCONNECTION cn) {
 
 	int lineSize;
 	
-	if ((lineSize = ConnectionGetLine(cn, requestType, MAXSIZE)) > 0)
+	if ((lineSize = ConnectionGetLineAsync(cn, requestType, MAXSIZE)) > 0)
 	{
 		MessageProcessor processor;
 		ToUpper(requestType);
@@ -257,6 +257,7 @@ BOOL ProcessRequest(PCONNECTION cn) {
 #ifdef _DEBUG
 			printf("Invalid command received: %s\n", requestType);
 #endif
+			cn->rPos = 0;
 			return FALSE;
 		}
 	 

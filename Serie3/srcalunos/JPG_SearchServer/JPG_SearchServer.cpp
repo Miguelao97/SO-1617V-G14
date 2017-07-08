@@ -13,7 +13,7 @@
 PCHAR Repository;
  
 UINT WINAPI ProcessConnection(LPVOID arg) {
-	SOCKET connectSocket = (SOCKET)arg;
+	/*SOCKET connectSocket = (SOCKET)arg;
 	PCONNECTION connection;
 
 	connection = ConnectionCreate(connectSocket);
@@ -21,7 +21,35 @@ UINT WINAPI ProcessConnection(LPVOID arg) {
 	while (ProcessRequest(connection));
 	
 	ConnectionDestroy(connection);
-	
+	*/
+	HANDLE iocp = arg;
+	PCONNECTION con;
+	DWORD size;
+	while(TRUE) {
+		if (!GetQueuedCompletionStatus(iocp, &size, (PULONG_PTR)&con, (LPOVERLAPPED*)&con, INFINITE) && GetLastError() != ERROR_IO_PENDING)
+		{
+			printf("Error");
+			return 0;
+		}
+
+		if (size != 0) {
+			//confirmar se len vem vazio
+			con->len = size;
+			if (!ProcessRequest(con))
+			{
+				ConnectionDestroy(con);
+				continue;
+			}
+
+			WSABUF buf;
+			buf.buf = con->bufferIn;
+			buf.len = BUFFERSIZE;
+
+			DWORD flags = 0;
+			WSARecv(con->socket, &buf, 1, NULL, &flags, &con->o, NULL);
+		}
+	 }
+
 	return 0;
 }
 
@@ -72,6 +100,9 @@ int main(int argc, char* argv[])
 		printf("Server listen() error");
 		return 1;
 	}
+	// invalid e null pq é a 1a criaçao, key 0 not relevant, 0 para ficar automaticamente com o nº de cores
+	HANDLE iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+	_beginthreadex(NULL, 0, ProcessConnection, (LPVOID)iocp, 0, NULL);
 
 	/* Main thread becomes listening/connecting/monitoring thread */
 	while (!terminate) {
@@ -85,11 +116,19 @@ int main(int argc, char* argv[])
 			terminate = TRUE;
 			continue;
 		}
+		CreateIoCompletionPort((HANDLE)connectSock, iocp, 0, 0);
+		PCONNECTION con = ConnectionCreate(connectSock);
+		WSABUF buf;
+		buf.buf = con->bufferIn;
+		buf.len = BUFFERSIZE;
+
+		DWORD flags = 0;
+		WSARecv(connectSock, &buf, 1, NULL, &flags, &con->o, NULL);
 #ifdef _DEBUG
 		printf("connected with %X, port %d..\n", connectSAddr.sin_addr, connectSAddr.sin_port);
 #endif
 		// Process connection in a dedicated thread
-		_beginthreadex(NULL, 0, ProcessConnection, (LPVOID)connectSock, 0, NULL);
+		//_beginthreadex(NULL, 0, ProcessConnection, (LPVOID)connectSock, 0, NULL);
 	}
 
 	// Cleanup

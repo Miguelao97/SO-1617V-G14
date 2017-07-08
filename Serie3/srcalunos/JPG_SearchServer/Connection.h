@@ -10,6 +10,7 @@
  * the connection
  */
 typedef struct Connection {
+	OVERLAPPED o;
 	CHAR bufferIn[BUFFERSIZE];	/* buffer used on connection reads */
 	CHAR bufferOut[BUFFERSIZE];	/* buffer used on buffered connection writes */
 	int wPos;					/* buffered write position */
@@ -28,6 +29,8 @@ void ConnectionFlushBufferToSocket(PCONNECTION c);
 
 /* I/O Formatters */
 INT ConnectionGetLine(PCONNECTION cn, char *buffer, int bufferSize);
+//NEW
+int ConnectionGetLineAsync(PCONNECTION cn, char *buffer, int bufferSize);
 VOID ConnectionPutString(PCONNECTION cn, const char *str);
 VOID ConnectionPutInt(PCONNECTION cn, int num);
 VOID ConnectionPut(PCONNECTION cn, char* format, ...);

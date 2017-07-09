@@ -108,7 +108,7 @@ static BOOL ProcessQueryCmd(PCONNECTION cn) {
 	char line[MAXSIZE];
 	int lineSize;
 
-	if ((lineSize = ConnectionGetLineAsync(cn, line, MAXSIZE)) > 0) {
+	if ((lineSize = ConnectionGetLine(cn, line, MAXSIZE)) > 0) {
 		POP_CTX ctx = CreateJPGContext();
 		char *parms[4] = { 0 };
 		int tag;

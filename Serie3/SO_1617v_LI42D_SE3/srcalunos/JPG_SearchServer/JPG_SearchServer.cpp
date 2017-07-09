@@ -29,12 +29,15 @@ UINT WINAPI ProcessConnection(LPVOID arg) {
 		if (!GetQueuedCompletionStatus(iocp, &size, (PULONG_PTR)&con, (LPOVERLAPPED*)&con, INFINITE) && GetLastError() != ERROR_IO_PENDING)
 		{
 			printf("Error");
-			return 0;
+			ConnectionDestroy(con);
+			continue;
 		}
 
 		if (size != 0) {
 			//confirmar se len vem vazio
 			con->len = size;
+			con->rPos = 0;
+			con->wPos = 0;
 			if (!ProcessRequest(con))
 			{
 				ConnectionDestroy(con);
